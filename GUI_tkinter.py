@@ -1,6 +1,7 @@
 from cipher_manager import CipherManager
 
 from tkinter import *
+from tkinter import filedialog
 from tkinter import ttk
 from functools import partial
 import os
@@ -78,12 +79,27 @@ class MainWindow:
         self.notepad = Text(self.root, width=94, height=40)
         self.notepad.place(x=20, y=40)
 
+        #путь к файлу с которым работаем
+        self.path = None
+        #имя файла с которым работаем
+        self.filename = None
+
+        #объект шифровального менеджера и файлов
+        self.cipher_manager = CipherManager()
+
+
     def open_file(self):
         """
         Событие для кнопки btn_open_file.
-        Открывает файловый диалог и открывает выбранный файл.
+        Открывает файловый диалог, открывает выбранный файл и выводит
+        его содержимое в текстовое поле атрибута self.notepad.
         """
         print(f'Сработал метод open_file')
+        fd = filedialog.askopenfile()
+        if fd:
+            self.path = str(fd).split("'")[1]
+            self.filename = self.path.split('/')[-1]
+
 
     def create_file(self):
         """

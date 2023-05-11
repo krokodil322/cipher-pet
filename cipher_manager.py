@@ -3,17 +3,14 @@ from hashlib import sha256
 from typing import Iterator, Iterable
 
 
-class CipherManager:
+class FileManager:
     """
-    Класс для работы с файлами и их шифрованием.
+    Класс для работы с файлами.
     """
-    __KEY = b"fmSaVgithtX19_JwmOtcXkJ13nxBX-yvSi1XAxm7rdw="
-    __CIPHER = Fernet(__KEY)
-
     @staticmethod
-    def loader(data: Iterable, filename: str, mod_load: str='w') -> None:
+    def loader(data: Iterable, filename: str, mod_load: str = 'w') -> None:
         """
-        Загружает зашифрованные данные в файл в указанном режиме. Возвращает None.
+        Загружает данные в файл в указанном режиме. Возвращает None.
         data: Итерируемый объект с информацией для загрузки в файл;
         filename: Имя файла для загрузки;
         mod_load: Режим записи в файл(дозапись или перезапись) по умолчанию перезапись
@@ -28,13 +25,21 @@ class CipherManager:
     @staticmethod
     def unloader(filename: str) -> Iterator[str]:
         """
-        Создаёт генератор который возвращает строки из зашифрованного файла.
+        Создаёт генератор который возвращает строки из файла.
         filename - это имя файла который будет читать функция.
         """
 
         with open(filename, 'r', encoding="utf-8") as file:
             for row in file:
                 yield row.rstrip()
+
+
+class CipherManager:
+    """
+    Класс для работы с шифрованием и расшифрованием строк.
+    """
+    __KEY = b"fmSaVgithtX19_JwmOtcXkJ13nxBX-yvSi1XAxm7rdw="
+    __CIPHER = Fernet(__KEY)
 
     def encrypt_text(self, data: Iterable[str]) -> Iterator[str]:
         """
