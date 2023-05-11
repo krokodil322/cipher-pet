@@ -1,15 +1,14 @@
-from cipher_manager import CipherManager, FileManager
+from cipher_manager import CipherManager
 import csv
 import os
 
 
 cipher_manager = CipherManager()
-file_manager = FileManager()
 test_data = ['abrakadabra', '1234567890', 'qwerty12345']
 filename = 'test.txt'
 
-# тест метода loader
-file_manager.loader(data=test_data, filename=filename, mod_load='w')
+# тест метода load_encrypted
+cipher_manager.load_encrypted(data=test_data, filename=filename, mod_load='w')
 # проверяем то, что функция loader записала
 with open('test.txt', 'r', encoding='utf-8') as file:
     data = list(map(str.rstrip, file.readlines()))
@@ -19,17 +18,17 @@ with open('test.txt', 'r', encoding='utf-8') as file:
         f'Данные которые записались: {data}'
 )
 
-# тест метода unloader
-file_manager.loader(data=test_data, filename=filename, mod_load='w')
-data_loader = list(file_manager.unloader(filename=filename))
+# тест метода unload_encrypted
+cipher_manager.load_encrypted(data=test_data, filename=filename, mod_load='w')
+data_loader = list(cipher_manager.unload_encrypted(filename=filename))
 assert len(data_loader) == len(test_data) and all(i1 == i2 for i1, i2 in zip(test_data, data)), (
-    f'Метод unloader отработал неверно! \n'
+    f'Метод unload_encrypted отработал неверно! \n'
     f'Данные которые записала функция loader: {test_data} \n'
-    f'Данные которые извлекла функция unloader: {data_loader}'
+    f'Данные которые извлекла функция unload_encrypted: {data_loader}'
 )
 
 # тест методов encrypt_text и decrypt_text
-generator_row = file_manager.unloader(filename=filename)
+generator_row = cipher_manager.unload_encrypted(filename=filename)
 encrypt_data = cipher_manager.encrypt_text(generator_row)
 decrypt_data = list(cipher_manager.decrypt_text(encrypt_data))
 assert len(test_data) == len(decrypt_data) and all(i1 == i2 for i1, i2 in zip(test_data, decrypt_data)), (
@@ -38,14 +37,14 @@ assert len(test_data) == len(decrypt_data) and all(i1 == i2 for i1, i2 in zip(te
 
 
 test_data = ['abrakadabra', '1234567890', 'qwerty12345', 'qweasdSVerbereq', 'asdasdwggWFGWEfsf']
-file_manager.loader(data=test_data, filename=filename, mod_load='w')
-filedata = file_manager.unloader(filename=filename)
+cipher_manager.load_encrypted(data=test_data, filename=filename, mod_load='w')
+filedata = cipher_manager.unload_encrypted(filename=filename)
 crypto_data = cipher_manager.encrypt_text(filedata)
 fileload = 'test2.txt'
-file_manager.loader(data=crypto_data, filename=fileload, mod_load='w')
+cipher_manager.load_encrypted(data=crypto_data, filename=fileload, mod_load='w')
 os.remove(filename)
 os.rename(fileload, filename)
-crypto_data = list(file_manager.unloader(filename=filename))
+crypto_data = list(cipher_manager.unload_encrypted(filename=filename))
 result_data = list(cipher_manager.decrypt_text(crypto_data))
 assert len(test_data) == len(result_data) and all(i1 == i2 for i1, i2 in zip(result_data, test_data)), (
         'Какой-то из методов: (encrypt_text, decrypt_text) отработал неверно!'
@@ -71,11 +70,10 @@ assert len(test_data) == len(result_data) and all(i1 == i2 for i1, i2 in zip(res
 #             writer.writerow(value)
 
 
-# filedata = file_manager.unloader(filename=filename)
+# filedata = cipher_manager.unload_encrypted(filename=filename)
 # crypto_data = cipher_manager.encrypt_text(filedata)
 # fileload = 'test_data2.txt'
-# file_manager.loader(data=crypto_data, filename=fileload, mod_load='w')
+# cipher_manager.load_encrypted(data=crypto_data, filename=fileload, mod_load='w')
 # os.remove(filename)
 # os.rename(fileload, filename)
-
-print('Все тесты успешно прошли!')
+print('Все тесты прошли успешно!')
