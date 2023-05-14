@@ -3,6 +3,8 @@ from cipher_manager import CipherManager
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
+from tkinter import messagebox
+
 from functools import partial
 from random import randint
 import os
@@ -40,23 +42,21 @@ class MainWindow:
         self.root.geometry(f'800x710')
         self.root.resizable(False, False)
 
+        self.root.protocol('WM_DELETE_WINDOW', self.exit)
+
         # меню окна
         self.menu = Menu(self.root)
         struct_menu = {
-            'Файл': [
+            'Файл': (
                 ('Новый файл', self.create_file), ('Открыть файл', self.open_file),
                 ('Сохранить', self.save_file), ('Сохранить как', self.save_file_as)
-            ],
-            'Команды': [
-                ('Зашифровать файл', self.encrypt_file), ('Расшифровать файл', self.decrypt_file),
-            ],
-            'Вид': [
-                ('Тема', partial(self.preferences, flag='theme')), ('Шрифт', partial(self.preferences, flag='font')),
-                ('Размер шрифта', partial(self.preferences, flag='font-size')),
-            ],
-            'О программе': [
+            ),
+            'Вид': (
+                ('Оформление', self.preferences),
+            ),
+            'О программе': (
                 ('Справка', partial(self.about, flag='reference')), ('О программе', partial(self.about, flag='about'))
-            ],
+            ),
         }
         for cascade, elem_menu in struct_menu.items():
             submenu = Menu(self.menu, tearoff=0)
@@ -70,15 +70,12 @@ class MainWindow:
         self.btn_create_file = ttk.Button(self.root, text='Создать файл', command=self.create_file)
         self.btn_save_file = ttk.Button(self.root, text='Сохранить файл',
                                         command=self.save_file, state='disabled')
-        self.btn_encrypt_file = ttk.Button(self.root, text='Зашифровать файл',
-                                           command=self.encrypt_file, state='disabled')
-        self.btn_decrypt_file = ttk.Button(self.root, text='Расшифровать файл ',
-                                           command=self.decrypt_file, state='disabled')
         self.btn_open_file.place(x=20, y=10)
         self.btn_create_file.place(x=120, y=10)
         self.btn_save_file.place(x=220, y=10)
-        self.btn_encrypt_file.place(x=520, y=10)
-        self.btn_decrypt_file.place(x=650, y=10)
+
+        # сообщение успешного сохранения файла
+        self.save_msg = Label(fg='#006400', text='Файл успешно сохранён!', font=14)
 
         # создаём текстовое поле
         self.notepad = Text(self.root, width=94, height=40)
@@ -89,24 +86,21 @@ class MainWindow:
         # имя текущего файла
         self.filename = None
 
+        # статус сохранения файла
+        self.save_status = True
+
         # менеджер шифровщика
         self.cipher = CipherManager()
 
-    def unlock_btn(self):
+    def exit(self):
         """
-        Разблокирует группу кнопок: btn_save_file, btn_encrypt_file, btn_decrypt_file
+        Этот метод отрабатывает, когда пользователь выходит из программы.
         """
-        self.btn_save_file['state'] = 'enabled'
-        self.btn_encrypt_file['state'] = 'enabled'
-        self.btn_decrypt_file['state'] = 'enabled'
-
-    def lock_btn(self):
-        """
-        Блокирует группу кнопок: btn_save_file, btn_encrypt_file, btn_decrypt_file
-        """
-        self.btn_save_file['state'] = 'disabled'
-        self.btn_encrypt_file['state'] = 'disabled'
-        self.btn_decrypt_file['state'] = 'disabled'
+        if not self.save_status:
+            if messagebox.askokcancel("Quit", "Вы не сохранили файл. Вы действительно хотите выйти?"):
+                self.root.destroy()
+        else:
+            self.root.destroy()
 
     def clear_all(self) -> None:
         """
@@ -114,6 +108,9 @@ class MainWindow:
         Создаёт/Очищает блокнот атрибута self.notepad
         """
         self.notepad.delete('0.0', END)
+        if self.save_status:
+            self.save_msg.place_forget()
+
 
     def open_file(self):
         """
@@ -134,8 +131,11 @@ class MainWindow:
             # добавляем имя открываемого/создаваемого файла к названию приложения
             self.root.title(f'{self.__title_app} - {self.filename}')
 
-            # разблокируем кнопки
-            self.unlock_btn()
+            # статус сохранения файла
+            self.save_status = False
+
+            # разблокируем кнопку сейва
+            self.btn_save_file['state'] = 'enabled'
 
             if self.cipher.check(filename=path):
                 file = self.cipher.unload_encrypted(filename=path)
@@ -164,11 +164,14 @@ class MainWindow:
             self.root_path = '/'.join(path.split('/')[:-1])  # root_path: C:/Users/user/Desktop
             self.filename = path.split('/')[-1]
 
+            # статус сохранения файла
+            self.save_status = False
+
             # добавляем имя открываемого/создаваемого файла к названию приложения
             self.root.title(f'{self.__title_app} - {self.filename}')
 
-            # разблокируем кнопки
-            self.unlock_btn()
+            # разблокируем кнопку сейва
+            self.btn_save_file['state'] = 'enabled'
 
     def save_file(self):
         """
@@ -194,15 +197,18 @@ class MainWindow:
             os.remove(old_path)
             os.rename(path, old_path)
 
-            # блокируем кнопки
-            self.lock_btn()
+            # блокируем кнопку сейва
+            self.btn_save_file['state'] = 'disabled'
 
-            # очищаем текстовое поле и выводим сообщение
-            self.clear_all()
-            self.notepad.insert(END, f'Файл {self.filename} успешно зашифрован и сохранён!')
+            # статус сохранения файла
+            self.save_status = True
 
             # убираем старый файл из названия
             self.root.title(self.__title_app)
+
+            # выводим на экран сообщение об успешном сохранении
+            self.save_msg.place(x=500, y=10)
+
 
     def save_file_as(self):
         """
@@ -222,33 +228,24 @@ class MainWindow:
             self.cipher.load_encrypted(filename=path, data=encrypt_text)
 
             # блокируем кнопки
-            self.lock_btn()
+            self.btn_save_file['state'] = 'disabled'
 
-            # очищаем текстовое поле и выводим сообщение
-            self.clear_all()
-            self.notepad.insert(END, f'Файл {self.filename} успешно зашифрован и сохранён!')
+            # статус сохранения файла
+            self.save_status = True
 
             # убираем старый файл из названия
             self.root.title(self.__title_app)
 
-    def preferences(self, flag: str):
+            # выводим на экран сообщение об успешном сохранении
+            self.save_msg.place(x=500, y=10)
+
+    def preferences(self):
         """
         Метод оконного меню, отвечает за внешний вид окна и шрифта.
         Принимает параметр flag типа str значения которого должны входить в список __flags
         """
-        __flags = ('theme', 'font', 'font-size')
-        if flag not in __flags:
-            message = (
-                f'Атрибут flag метода preferences может принимать лишь эти значений {__flags}',
-                f'Твоё значение flag={flag}'
-            )
-            raise ValueError(message)
-        if flag == 'theme':
-            print('Сработал метод preferences с флагом theme')
-        elif flag == 'font':
-            print('Сработал метод preferences с флагом font')
-        elif flag == 'font-size':
-            print('Сработал метод preferences с флагом font-size')
+        print('Сработал метод preferences')
+
 
     def about(self, flag: str):
         """
