@@ -68,7 +68,8 @@ class MainWindow:
         # кнопки управления
         self.btn_open_file = ttk.Button(self.root, text='Открыть файл', command=self.open_file)
         self.btn_create_file = ttk.Button(self.root, text='Создать файл', command=self.create_file)
-        self.btn_save_file = ttk.Button(self.root, text='Сохранить файл', command=self.save_file, state='disabled')
+        self.btn_save_file = ttk.Button(self.root, text='Сохранить файл',
+                                        command=self.save_file, state='disabled')
         self.btn_encrypt_file = ttk.Button(self.root, text='Зашифровать файл',
                                            command=self.encrypt_file, state='disabled')
         self.btn_decrypt_file = ttk.Button(self.root, text='Расшифровать файл ',
@@ -110,7 +111,7 @@ class MainWindow:
     def clear_all(self) -> None:
         """
         Ничего не принимает, ничего не возвращает
-        Создаёт/Очищает текстовое поле атрибута self.notepad
+        Создаёт/Очищает блокнот атрибута self.notepad
         """
         self.notepad.delete('0.0', END)
 
@@ -122,10 +123,15 @@ class MainWindow:
         print(f'Сработал метод open_file')
         fd = filedialog.askopenfile()
         if fd:
+            path = fd.name
+            # очищаем текстовое поле
             self.clear_all()
-            path = str(fd).split("'")[1] # path: C:/Users/user/Desktop/valuable.txt
-            self.root_path = '/'.join(path.split('/')[:-1]) # root_path: C:/Users/user/Desktop
-            self.filename = path.split('/')[-1] # filename: valuable.txt
+
+            # получаем корень директории открываемого/создаваемого файла и его имя
+            self.root_path = '/'.join(path.split('/')[:-1])  # root_path: C:/Users/user/Desktop
+            self.filename = path.split('/')[-1]
+
+            # добавляем имя открываемого/создаваемого файла к названию приложения
             self.root.title(f'{self.__title_app} - {self.filename}')
 
             # разблокируем кнопки
@@ -147,6 +153,22 @@ class MainWindow:
         Создаёт новый файл.
         """
         print(f'Сработал метод create_file')
+        fd = filedialog.asksaveasfile()
+        if fd:
+            path = fd.name
+
+            # очищаем текстовое поле
+            self.clear_all()
+
+            # получаем корень директории открываемого/создаваемого файла и его имя
+            self.root_path = '/'.join(path.split('/')[:-1])  # root_path: C:/Users/user/Desktop
+            self.filename = path.split('/')[-1]
+
+            # добавляем имя открываемого/создаваемого файла к названию приложения
+            self.root.title(f'{self.__title_app} - {self.filename}')
+
+            # разблокируем кнопки
+            self.unlock_btn()
 
     def save_file(self):
         """
@@ -182,29 +204,32 @@ class MainWindow:
             # убираем старый файл из названия
             self.root.title(self.__title_app)
 
-
     def save_file_as(self):
         """
         Событие для кнопки btn_save_file_as.
         Сохраняет файл как.
         """
         print('Сработал метод save_file_as')
-        if self.filename:
-            pass
+        fd = filedialog.asksaveasfile()
+        if fd:
+            path = fd.name
 
-    def encrypt_file(self):
-        """
-        Событие для кнопки btn_encrypt_file.
-        Зашифровывает текущий файл.
-        """
-        print(f'Сработал метод encrypt_file')
+            # получаем и шифруем данные из блокнота
+            data = self.notepad.get('1.0', END)
+            encrypt_text = self.cipher.encrypt_text(data)
 
-    def decrypt_file(self):
-        """
-        Событие для кнопки btn_decrypt_file
-        Расшифровывает текущий файл
-        """
-        print(f'Сработал метод decrypt_file')
+            # загружаем зашифрованные данные по указанному пути
+            self.cipher.load_encrypted(filename=path, data=encrypt_text)
+
+            # блокируем кнопки
+            self.lock_btn()
+
+            # очищаем текстовое поле и выводим сообщение
+            self.clear_all()
+            self.notepad.insert(END, f'Файл {self.filename} успешно зашифрован и сохранён!')
+
+            # убираем старый файл из названия
+            self.root.title(self.__title_app)
 
     def preferences(self, flag: str):
         """

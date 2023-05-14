@@ -1,9 +1,6 @@
-import os
-
 from cryptography.fernet import Fernet
 from hashlib import sha256
 from typing import Iterator, Iterable
-import pickle
 
 
 class CipherManager:
@@ -12,7 +9,6 @@ class CipherManager:
     """
     __KEY = b"fmSaVgithtX19_JwmOtcXkJ13nxBX-yvSi1XAxm7rdw="
     __CIPHER = Fernet(__KEY)
-    __DB = 'crypto_database.pkl'
 
     @staticmethod
     def check(filename: str) -> bool:

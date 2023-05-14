@@ -58,6 +58,17 @@ class CipherManagerTest(TestCase):
         status_cipher = self.cipher.check(self.filename)
         self.assertTrue(not status_cipher)
 
+    def test_generate_cipher_key(self):
+        """Тест метода generate_cipher_key"""
+        cipher_key = self.cipher.generate_cipher_key()
+        self.assertTrue(type(cipher_key) is bytes)
+
+    def test_to_hash_password(self):
+        pswd = 'qwerty123'
+        hash_pswd = self.cipher.to_hash_password(pswd)
+        self.assertTrue(pswd != hash_pswd)
+        hash_pswd2 = self.cipher.to_hash_password(pswd)
+        self.assertEqual(hash_pswd, hash_pswd2)
 
 class MainWindowTest(TestCase):
     """Для тестирования класса MainWindow"""
