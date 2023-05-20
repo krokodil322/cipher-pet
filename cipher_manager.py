@@ -7,7 +7,7 @@ class CipherManager:
     """
         Класс для работы с файлами и их шифрованием.
     """
-    __KEY = b"fmSaVgithtX19_JwmOtcXkJ13nxBX-yvSi1XAxm7rdw="
+    __KEY = b'VHlob1RdbVbXFCxTu-AW8W4B7HEWxhQUSmPo4XSzbzE='
     __CIPHER = Fernet(__KEY)
 
     @staticmethod
@@ -58,10 +58,13 @@ class CipherManager:
             Создаёт генератор который расшифровывает и возвращает строки.
             data - это итерируемый объект элементы которого надо расшифровать
         """
+
         for row in data:
             if len(row) > 3:
                 row = row[2:len(row)-1]
                 yield self.__CIPHER.decrypt(row.encode()).decode("utf-8")
+
+
 
     @staticmethod
     def generate_cipher_key() -> bytes:
@@ -76,3 +79,9 @@ class CipherManager:
             Хэширует принимаемый пароль и возвращает хэш.
         """
         return sha256(password.encode()).hexdigest()
+
+
+
+if __name__ == '__main__':
+    cm = CipherManager()
+    print(cm.generate_cipher_key())

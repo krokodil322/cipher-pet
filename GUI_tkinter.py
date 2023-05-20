@@ -5,6 +5,7 @@ from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
 
+from cryptography.fernet import InvalidToken
 from functools import partial
 from random import randint
 import os
@@ -83,6 +84,7 @@ class MainWindow:
 
         # путь к текущему файлу
         self.root_path = None
+
         # имя текущего файла
         self.filename = None
 
@@ -111,7 +113,6 @@ class MainWindow:
         if self.save_status:
             self.save_msg.place_forget()
 
-
     def open_file(self):
         """
         Событие для кнопки btn_open_file.
@@ -137,11 +138,18 @@ class MainWindow:
             # разблокируем кнопку сейва
             self.btn_save_file['state'] = 'enabled'
 
+            # если файл зашифрован
             if self.cipher.check(filename=path):
                 file = self.cipher.unload_encrypted(filename=path)
-                decrypted_data = self.cipher.decrypt_text(file)
-                for row in decrypted_data:
-                    self.notepad.insert(END, row)
+                try:
+                    decrypted_data = self.cipher.decrypt_text(file)
+                    for row in decrypted_data:
+                        self.notepad.insert(END, row)
+                except InvalidToken:
+                    message = f'Файл с именем {self.filename} зашифрован другим ключом.'
+                    self.notepad.insert(END, message)
+                    # чтобы не всплывало окно при закрытии программы
+                    self.save_status = True
             else:
                 with open(path, 'r', encoding='utf-8') as file:
                     for row in file:
