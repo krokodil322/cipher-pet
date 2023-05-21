@@ -1,9 +1,8 @@
 from cipher_manager import CipherManager
+from preference import Preference, Config
 
 from tkinter import *
-from tkinter import ttk
-from tkinter import filedialog
-from tkinter import messagebox
+from tkinter import ttk, filedialog, messagebox
 
 from cryptography.fernet import InvalidToken
 from functools import partial
@@ -11,13 +10,11 @@ from random import randint
 import os
 
 
-
 class SingletonError(Exception):
     """
     Для выбивания пробок при попытке создать 2 объекта класса MainWindow
     """
     pass
-
 
 class MainWindow:
     """
@@ -36,7 +33,7 @@ class MainWindow:
         cls.__instance = super().__new__(cls)
         return cls.__instance
 
-    def __init__(self):
+    def __init__(self, config: Config):
         # окно
         self.root = Tk()
         self.root.title(self.__title_app)
@@ -44,6 +41,9 @@ class MainWindow:
         self.root.resizable(False, False)
 
         self.root.protocol('WM_DELETE_WINDOW', self.exit)
+
+        # конфиг приложения
+        self.config = config
 
         # меню окна
         self.menu = Menu(self.root)
@@ -76,10 +76,10 @@ class MainWindow:
         self.btn_save_file.place(x=220, y=10)
 
         # сообщение успешного сохранения файла
-        self.save_msg = Label(fg='#006400', text='Файл успешно сохранён!', font=14)
+        self.save_msg = Label(fg='#006400', text='Файл успешно сохранён!', font=self.config.font)
 
         # создаём текстовое поле
-        self.notepad = Text(self.root, width=94, height=40)
+        self.notepad = Text(self.root, width=94, height=40, font=f'{self.config.font} {self.config.font_size}')
         self.notepad.place(x=20, y=40)
 
         # путь к текущему файлу
@@ -104,7 +104,7 @@ class MainWindow:
         else:
             self.root.destroy()
 
-    def clear_all(self) -> None:
+    def clear_text(self):
         """
         Ничего не принимает, ничего не возвращает
         Создаёт/Очищает блокнот атрибута self.notepad
@@ -118,12 +118,11 @@ class MainWindow:
         Событие для кнопки btn_open_file.
         Открывает файловый диалог и открывает выбранный файл.
         """
-        print(f'Сработал метод open_file')
         fd = filedialog.askopenfile()
         if fd:
             path = fd.name
             # очищаем текстовое поле
-            self.clear_all()
+            self.clear_text()
 
             # получаем корень директории открываемого/создаваемого файла и его имя
             self.root_path = '/'.join(path.split('/')[:-1])  # root_path: C:/Users/user/Desktop
@@ -160,13 +159,12 @@ class MainWindow:
         Событие для кнопки btn_create_file.
         Создаёт новый файл.
         """
-        print(f'Сработал метод create_file')
         fd = filedialog.asksaveasfile()
         if fd:
             path = fd.name
 
             # очищаем текстовое поле
-            self.clear_all()
+            self.clear_text()
 
             # получаем корень директории открываемого/создаваемого файла и его имя
             self.root_path = '/'.join(path.split('/')[:-1])  # root_path: C:/Users/user/Desktop
@@ -186,7 +184,6 @@ class MainWindow:
         Событие для кнопки btn_save_file.
         Сохраняет изменения в текущем файле.
         """
-        print(f'Сработал метод save_file')
         # готовим путь для сейва
         if self.filename:
             buffer_filename = str(randint(1, 10)) + '.txt'
@@ -217,13 +214,11 @@ class MainWindow:
             # выводим на экран сообщение об успешном сохранении
             self.save_msg.place(x=500, y=10)
 
-
     def save_file_as(self):
         """
         Событие для кнопки btn_save_file_as.
         Сохраняет файл как.
         """
-        print('Сработал метод save_file_as')
         fd = filedialog.asksaveasfile()
         if fd:
             path = fd.name
@@ -250,10 +245,22 @@ class MainWindow:
     def preferences(self):
         """
         Метод оконного меню, отвечает за внешний вид окна и шрифта.
-        Принимает параметр flag типа str значения которого должны входить в список __flags
         """
-        print('Сработал метод preferences')
+        # открываем дочернее окно
+        pref = Preference(config=self.config)
+        pref.focus()
 
+        # получаем обновлённый конфиг
+        self.config = self.config.get_config()
+
+        # получим текст из блокнота
+        text = self.notepad.get('1.0', END)
+
+        # пересоздаём и устанавливаем блокнот с новой конфигурацией
+        self.notepad = Text(self.root, width=94, height=40, font=(self.config.font, self.config.font_size))
+        self.notepad.place(x=20, y=40)
+        # не забываем вставить в него старый текст
+        self.notepad.insert(END, text)
 
     def about(self, flag: str):
         """
@@ -277,10 +284,5 @@ class MainWindow:
         Запускает главное окно приложения
         """
         self.root.mainloop()
-
-
-if __name__ == '__main__':
-    main_window = MainWindow()
-    main_window.run()
 
 

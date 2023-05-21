@@ -1,6 +1,6 @@
 from unittest import TestCase, main
 from cipher_manager import CipherManager
-from GUI_tkinter import MainWindow
+from main import MainWindow
 
 
 class CipherManagerTest(TestCase):

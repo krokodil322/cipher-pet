@@ -1,13 +1,49 @@
 from tkinter import *
-from tkinter import ttk, font, colorchooser
+from tkinter import ttk, font
 
-from functools import partial
 import json
 
 
+class Config:
+    """Для удобства работы со словарём конфига"""
+    __slots__ = ('font_size', 'font', 'index_font_size', 'index_font')
+
+    def __init__(
+            self,
+            font_size: int=12,
+            font: str='Calibri',
+            index_font_size: int=4,
+            index_font: int=32,
+        ) -> None:
+        self.font_size = font_size
+        self.font = font
+        self.index_font_size = index_font_size
+        self.index_font = index_font
+
+    def get_config(self) -> 'Config':
+        """
+        Создаёт дефолтный конфиг, если файла config.json не создан;
+        Если файл config.json существует, то берёт данные из него;
+        Возвращает словарь с набором конфигураций приложения.
+        """
+        filename = 'config.json'
+        try:
+            with open(filename, 'r', encoding='utf-8') as json_file:
+                return self.__class__(*json.load(fp=json_file).values())
+        except FileNotFoundError:
+            with open(filename, 'w', encoding='utf-8') as json_file:
+                json.dump({
+                'font_size': self.font_size,
+                'font': self.font,
+                'index_font_size': self.index_font_size,
+                'index_font': self.index_font,
+            }, fp=json_file, indent=2)
+            return self
+
+
 class Preference:
-    def __init__(self):
-        self.root = Tk()
+    def __init__(self, config: Config):
+        self.root = Toplevel()
         self.root.title('Вид текста')
         self.root.geometry('400x150')
         self.root.resizable(False, False)
@@ -17,26 +53,16 @@ class Preference:
         # все размеры шрифтов
         self.__SIZES = tuple(range(8, 25))
 
+        self.config = config
+
         # размер шрифта
         self.font_size = ttk.Combobox(self.root, values=self.__SIZES)
         # шрифт
         self.font = ttk.Combobox(self.root, values=self.__FONTS)
 
-        try:
-            with open('config.json', 'r', encoding='utf-8') as json_file:
-                self.config = json.load(fp=json_file)
-        except FileNotFoundError:
-            # иначе создаём конфиг по умолчанию
-            self.config = {
-                'font_size': 12,
-                'font': 'Calibri',
-                'index_font_size': self.__SIZES.index(12),
-                'index_font': self.__FONTS.index('Calibri')
-            }
-            self.create_cfg_file()
         # уст-ка стартовых значений
-        self.font_size.current(self.config['index_font_size'])
-        self.font.current(self.config['index_font'])
+        self.font_size.current(self.config.index_font_size)
+        self.font.current(self.config.index_font)
 
         # лэйблы
         self.lbl_font_size = ttk.Label(self.root, text='Размер текста')
@@ -57,13 +83,12 @@ class Preference:
         self.btn_close_cfg.place(x=200, y=120)
 
     def create_cfg_file(self):
-        """Создаёт файл config.json в котором выставлены настройки шрифтв"""
+        """Создаёт файл config.json в котором выставлены настройки шрифта"""
         with open('config.json', 'w', encoding='utf-8') as json_file:
             json.dump(self.config, fp=json_file, indent=2)
 
     def save_cfg(self):
         """Сохраняет выбранные конфигурации в config.json"""
-        print('Сработал метод save_cfg')
         font_size = self.font_size.get()
         font = self.font.get()
         font_size = int(font_size) if font_size else self.config['font_size']
@@ -77,8 +102,17 @@ class Preference:
         self.create_cfg_file()
         self.close_cfg()
 
+    def focus(self):
+        """
+        Фокус на дочернее окно.
+        Запрещает доступ к главному окну.
+        Если закрыть программу, то и дочернее окно закроется.
+        """
+        self.root.grab_set()
+        self.root.focus_set()
+        self.root.wait_window()
+
     def close_cfg(self):
-        print('Сработал метод close_cfg')
         self.root.destroy()
 
     def run(self):
