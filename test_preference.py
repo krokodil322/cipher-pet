@@ -8,86 +8,78 @@ import json
 class Preference:
     def __init__(self):
         self.root = Tk()
-        self.root.title('Внешний вид')
-        self.root.geometry('400x300')
+        self.root.title('Вид текста')
+        self.root.geometry('400x150')
         self.root.resizable(False, False)
 
-        # цвет рамки окна
-        self.frame_color = None
-        # цвет фона текстового поля(блокнота)
-        self.back_color = None
-        # цвет текста(шрифта)
-        self.font_color = None
+        # все шрифты
+        self.__FONTS = font.families()
+        # все размеры шрифтов
+        self.__SIZES = tuple(range(8, 25))
+
         # размер шрифта
-        self.font_size = ttk.Combobox(self.root, values=tuple(range(8, 25)))
+        self.font_size = ttk.Combobox(self.root, values=self.__SIZES)
         # шрифт
-        self.font = ttk.Combobox(self.root, values=font.families())
+        self.font = ttk.Combobox(self.root, values=self.__FONTS)
+
+        try:
+            with open('config.json', 'r', encoding='utf-8') as json_file:
+                self.config = json.load(fp=json_file)
+        except FileNotFoundError:
+            # иначе создаём конфиг по умолчанию
+            self.config = {
+                'font_size': 12,
+                'font': 'Calibri',
+                'index_font_size': self.__SIZES.index(12),
+                'index_font': self.__FONTS.index('Calibri')
+            }
+            self.create_cfg_file()
+        # уст-ка стартовых значений
+        self.font_size.current(self.config['index_font_size'])
+        self.font.current(self.config['index_font'])
 
         # лэйблы
-        self.lbl_back_color = ttk.Label(self.root, text='Цвет фона блокнота')
-        self.lbl_frame_color = ttk.Label(self.root, text='Цвет фоновой рамки')
-        self.lbl_font_color = ttk.Label(self.root, text='Цвет текста')
         self.lbl_font_size = ttk.Label(self.root, text='Размер текста')
         self.lbl_font = ttk.Label(self.root, text='Шрифт')
 
-        # кнопки активации лэйблов
-        self.btn_change_back_color = ttk.Button(self.root, text='Выбрать цвет',
-                                                command=partial(self.change_color, 'back'))
-        self.btn_change_frame_color = ttk.Button(self.root, text='Выбрать цвет',
-                                                 command=partial(self.change_color, 'frame'))
-        self.btn_change_font_color = ttk.Button(self.root, text='Выбрать цвет',
-                                                command=partial(self.change_color, 'font'))
-
         # уст-ка лэйблов
-        self.lbl_back_color.place(x=20, y=20)
-        self.lbl_frame_color.place(x=20, y=60)
-        self.lbl_font_color.place(x=20, y=100)
-        self.lbl_font_size.place(x=20, y=140)
-        self.lbl_font.place(x=20, y=180)
+        self.lbl_font_size.place(x=20, y=20)
+        self.lbl_font.place(x=20, y=60)
 
         # уст-ка кнопок активации лэйблов
-        self.btn_change_back_color.place(x=240, y=20)
-        self.btn_change_frame_color.place(x=240, y=60)
-        self.btn_change_font_color.place(x=240, y=100)
-        self.font_size.place(x=240, y=140)
-        self.font.place(x=240, y=180)
+        self.font_size.place(x=240, y=20)
+        self.font.place(x=240, y=60)
 
         # создание и уст-ка кнопок сохранения и выхода окна конфига
         self.btn_save_cfg = ttk.Button(self.root, text='Сохранить', command=self.save_cfg)
         self.btn_close_cfg = ttk.Button(self.root, text='Закрыть', command=self.close_cfg)
-        self.btn_save_cfg.place(x=300, y=240)
-        self.btn_close_cfg.place(x=200, y=240)
+        self.btn_save_cfg.place(x=300, y=120)
+        self.btn_close_cfg.place(x=200, y=120)
 
-    def change_color(self, flag: str):
-        print(f'Сработал метод change_color с флагом {flag}')
-
-        __flags = ('back', 'frame', 'font')
-        if flag not in __flags:
-            raise ValueError(f'Недоступный флаг - {flag}. Все доступные флаги: {__flags}')
-        _, hx = colorchooser.askcolor()
-        if hx:
-            if flag == 'back':
-                self.back_color = hx
-            elif flag == 'frame':
-                self.frame_color = hx
-            elif flag == 'font':
-                self.font_color = hx
+    def create_cfg_file(self):
+        """Создаёт файл config.json в котором выставлены настройки шрифтв"""
+        with open('config.json', 'w', encoding='utf-8') as json_file:
+            json.dump(self.config, fp=json_file, indent=2)
 
     def save_cfg(self):
+        """Сохраняет выбранные конфигурации в config.json"""
         print('Сработал метод save_cfg')
-
-        data = {
-            'back_color': self.back_color,
-            'frame_color': self.frame_color,
-            'font_color': self.font_color,
-            'font_size': self.font_size.get(),
-            'font': self.font.get(),
+        font_size = self.font_size.get()
+        font = self.font.get()
+        font_size = int(font_size) if font_size else self.config['font_size']
+        font = font if font else self.config['font']
+        self.config = {
+            'font_size': font_size,
+            'font': font,
+            'index_font_size': self.__SIZES.index(font_size),
+            'index_font': self.__FONTS.index(font),
         }
-        with open('config.json', 'w', encoding='utf-8') as json_file:
-            json.dump(data, fp=json_file, indent=2)
+        self.create_cfg_file()
+        self.close_cfg()
 
     def close_cfg(self):
         print('Сработал метод close_cfg')
+        self.root.destroy()
 
     def run(self):
         self.root.mainloop()
