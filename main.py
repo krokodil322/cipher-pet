@@ -6,7 +6,6 @@ from tkinter import ttk, filedialog, messagebox
 
 from cryptography.fernet import InvalidToken
 from functools import partial
-from random import randint
 import os
 
 
@@ -38,8 +37,8 @@ class MainWindow:
         self.root = Tk()
         self.root.title(self.__title_app)
         self.root.geometry(f'800x710')
-        self.root.resizable(False, False)
 
+        # изменяем ивент при закрытии окна
         self.root.protocol('WM_DELETE_WINDOW', self.exit)
 
         # конфиг приложения
@@ -66,21 +65,17 @@ class MainWindow:
             self.menu.add_cascade(label=cascade, menu=submenu)
         self.root.config(menu=self.menu)
 
-        # кнопки управления
-        self.btn_open_file = ttk.Button(self.root, text='Открыть файл', command=self.open_file)
-        self.btn_create_file = ttk.Button(self.root, text='Создать файл', command=self.create_file)
-        self.btn_save_file = ttk.Button(self.root, text='Сохранить файл',
-                                        command=self.save_file, state='disabled')
-        self.btn_open_file.place(x=20, y=10)
-        self.btn_create_file.place(x=120, y=10)
-        self.btn_save_file.place(x=220, y=10)
-
         # сообщение успешного сохранения файла
-        self.save_msg = Label(fg='#006400', text='Файл успешно сохранён!', font=self.config.font)
+        self.save_msg = Label(fg='#006400', text='Файл успешно сохранён!', font = self.config.index_font)
 
         # создаём текстовое поле
-        self.notepad = Text(self.root, width=94, height=40, font=f'{self.config.font} {self.config.font_size}')
-        self.notepad.place(x=20, y=40)
+        self.notepad = Text(self.root, font=(self.config.font, self.config.font_size), wrap=WORD)
+        self.notepad.pack(fill='both', expand=True)
+
+        # Создание колеса прокрутки по вертикали
+        self.scrollbar_y = ttk.Scrollbar(self.notepad, orient=VERTICAL, command=self.notepad.yview)
+        self.scrollbar_y.pack(side=RIGHT, fill=Y)
+        self.notepad.config(yscrollcommand=self.scrollbar_y.set)
 
         # путь к текущему файлу
         self.root_path = None
@@ -93,6 +88,26 @@ class MainWindow:
 
         # менеджер шифровщика
         self.cipher = CipherManager()
+
+        # событие для кобминаций клавиш
+        self.root.bind('<Control-KeyPress>', self.__hot_key_change_font_size)
+
+    def __hot_key_change_font_size(self, event) -> None:
+        """
+        Принимает event - который передаёся автоматически при нажатии клюбой клавиши.
+        Ивент который срабатывает при нажатии клавиш
+        Если клавиши CTRL + UP, то увеличивает шрифт на 2
+        Если клавиши CTRL + DOWN, то уменьшает шрифт на 2
+        Ничего не возвращает
+        """
+        if event.keycode == 38:
+            if self.config.font_size + 2 <= 26:
+                self.config.font_size += 2
+                self.notepad.config(font=(self.config.font, self.config.font_size))
+        elif event.keycode == 40:
+            if self.config.font_size - 2 >= 8:
+                self.config.font_size -= 2
+                self.notepad.config(font=(self.config.font, self.config.font_size))
 
     def exit(self):
         """
@@ -134,9 +149,6 @@ class MainWindow:
             # статус сохранения файла
             self.save_status = False
 
-            # разблокируем кнопку сейва
-            self.btn_save_file['state'] = 'enabled'
-
             # если файл зашифрован
             if self.cipher.check(filename=path):
                 file = self.cipher.unload_encrypted(filename=path)
@@ -150,6 +162,7 @@ class MainWindow:
                     # чтобы не всплывало окно при закрытии программы
                     self.save_status = True
             else:
+                print('Файл открываеся?')
                 with open(path, 'r', encoding='utf-8') as file:
                     for row in file:
                         self.notepad.insert(END, row)
@@ -176,9 +189,6 @@ class MainWindow:
             # добавляем имя открываемого/создаваемого файла к названию приложения
             self.root.title(f'{self.__title_app} - {self.filename}')
 
-            # разблокируем кнопку сейва
-            self.btn_save_file['state'] = 'enabled'
-
     def save_file(self):
         """
         Событие для кнопки btn_save_file.
@@ -186,24 +196,14 @@ class MainWindow:
         """
         # готовим путь для сейва
         if self.filename:
-            buffer_filename = str(randint(1, 10)) + '.txt'
-            path = os.path.join(self.root_path, buffer_filename) # C:/Users/user/Desktop\3.txt
+            path = os.path.join(self.root_path, self.filename) # C:/Users/user/Desktop\3.txt
 
             # получаем и шифруем данные из блокнота
             data = self.notepad.get('1.0', END)
-            encrypt_text = self.cipher.encrypt_text(data)
+            encrypt_text = tuple(self.cipher.encrypt_text(data))
 
             # загружаем зашифрованные данные по указанному пути
             self.cipher.load_encrypted(filename=path, data=encrypt_text)
-
-            # удаляем старый файл и переименовываем новый как старый
-            # это нужно для правильной работы функций генераторов
-            old_path = os.path.join(self.root_path, self.filename)
-            os.remove(old_path)
-            os.rename(path, old_path)
-
-            # блокируем кнопку сейва
-            self.btn_save_file['state'] = 'disabled'
 
             # статус сохранения файла
             self.save_status = True
@@ -211,8 +211,6 @@ class MainWindow:
             # убираем старый файл из названия
             self.root.title(self.__title_app)
 
-            # выводим на экран сообщение об успешном сохранении
-            self.save_msg.place(x=500, y=10)
 
     def save_file_as(self):
         """
@@ -225,13 +223,10 @@ class MainWindow:
 
             # получаем и шифруем данные из блокнота
             data = self.notepad.get('1.0', END)
-            encrypt_text = self.cipher.encrypt_text(data)
+            encrypt_text = tuple(self.cipher.encrypt_text(data))
 
             # загружаем зашифрованные данные по указанному пути
             self.cipher.load_encrypted(filename=path, data=encrypt_text)
-
-            # блокируем кнопки
-            self.btn_save_file['state'] = 'disabled'
 
             # статус сохранения файла
             self.save_status = True
@@ -253,14 +248,9 @@ class MainWindow:
         # получаем обновлённый конфиг
         self.config = self.config.get_config()
 
-        # получим текст из блокнота
-        text = self.notepad.get('1.0', END)
-
         # пересоздаём и устанавливаем блокнот с новой конфигурацией
-        self.notepad = Text(self.root, width=94, height=40, font=(self.config.font, self.config.font_size))
-        self.notepad.place(x=20, y=40)
-        # не забываем вставить в него старый текст
-        self.notepad.insert(END, text)
+        self.notepad.config(font=(self.config.font, self.config.font_size))
+        print(self.notepad.config)
 
     def about(self, flag: str):
         """

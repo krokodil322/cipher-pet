@@ -15,10 +15,10 @@ class Config:
             index_font_size: int=4,
             index_font: int=32,
         ) -> None:
-        self.font_size = font_size
+        self.font_size = int(font_size)
         self.font = font
-        self.index_font_size = index_font_size
-        self.index_font = index_font
+        self.index_font_size = int(index_font_size)
+        self.index_font = int(index_font)
 
     def get_config(self) -> 'Config':
         """
