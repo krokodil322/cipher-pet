@@ -1,5 +1,5 @@
 from cipher_manager import CipherManager
-from preference import Preference, Config
+from preference import Preference, Config, SIZES
 
 from tkinter import *
 from tkinter import ttk, filedialog, messagebox
@@ -65,15 +65,13 @@ class MainWindow:
             self.menu.add_cascade(label=cascade, menu=submenu)
         self.root.config(menu=self.menu)
 
-        # сообщение успешного сохранения файла
-        self.save_msg = Label(fg='#006400', text='Файл успешно сохранён!', font = self.config.index_font)
-
         # создаём текстовое поле
         self.notepad = Text(self.root, font=(self.config.font, self.config.font_size), wrap=WORD)
         self.notepad.pack(fill='both', expand=True)
 
         # Создание колеса прокрутки по вертикали
-        self.scrollbar_y = ttk.Scrollbar(self.notepad, orient=VERTICAL, command=self.notepad.yview)
+        self.scrollbar_y = Scrollbar(self.notepad, orient=VERTICAL, width=5,
+                                     cursor='arrow', command=self.notepad.yview)
         self.scrollbar_y.pack(side=RIGHT, fill=Y)
         self.notepad.config(yscrollcommand=self.scrollbar_y.set)
 
@@ -91,10 +89,18 @@ class MainWindow:
 
         # событие для кобминаций клавиш
         self.root.bind('<Control-KeyPress>', self.__hot_key_change_font_size)
+        self.menu = Menu(self.root, tearoff=0)
+        self.menu.add_command(label="Вырезать", command=self.cut_text)
+        self.menu.add_command(label="Копировать", command=self.copy_text)
+        self.menu.add_command(label="Вставить", command=self.paste_text)
+        self.menu.add_command(label="Удалить", command=self.delete_text)
+        self.notepad.bind("<Button-3>", self.show_popup)
+        self.notepad.bind('Control-c', self.copy_text)
+        self.notepad.bind('Control-v', self.paste_text)
 
     def __hot_key_change_font_size(self, event) -> None:
         """
-        Принимает event - который передаёся автоматически при нажатии клюбой клавиши.
+        Принимает event - который передаётся автоматически при нажатии любой клавиши.
         Ивент который срабатывает при нажатии клавиш
         Если клавиши CTRL + UP, то увеличивает шрифт на 2
         Если клавиши CTRL + DOWN, то уменьшает шрифт на 2
@@ -103,10 +109,12 @@ class MainWindow:
         if event.keycode == 38:
             if self.config.font_size + 2 <= 26:
                 self.config.font_size += 2
+                self.config.index_font_size = SIZES.index(self.config.font_size)
                 self.notepad.config(font=(self.config.font, self.config.font_size))
         elif event.keycode == 40:
             if self.config.font_size - 2 >= 8:
                 self.config.font_size -= 2
+                self.config.index_font_size = SIZES.index(self.config.font_size)
                 self.notepad.config(font=(self.config.font, self.config.font_size))
 
     def exit(self):
@@ -125,8 +133,6 @@ class MainWindow:
         Создаёт/Очищает блокнот атрибута self.notepad
         """
         self.notepad.delete('0.0', END)
-        if self.save_status:
-            self.save_msg.place_forget()
 
     def open_file(self):
         """
@@ -211,7 +217,6 @@ class MainWindow:
             # убираем старый файл из названия
             self.root.title(self.__title_app)
 
-
     def save_file_as(self):
         """
         Событие для кнопки btn_save_file_as.
@@ -234,9 +239,6 @@ class MainWindow:
             # убираем старый файл из названия
             self.root.title(self.__title_app)
 
-            # выводим на экран сообщение об успешном сохранении
-            self.save_msg.place(x=500, y=10)
-
     def preferences(self):
         """
         Метод оконного меню, отвечает за внешний вид окна и шрифта.
@@ -250,7 +252,6 @@ class MainWindow:
 
         # пересоздаём и устанавливаем блокнот с новой конфигурацией
         self.notepad.config(font=(self.config.font, self.config.font_size))
-        print(self.notepad.config)
 
     def about(self, flag: str):
         """
@@ -275,4 +276,32 @@ class MainWindow:
         """
         self.root.mainloop()
 
+    """КОНТЕКСТНОЕ МЕНЮ"""
+    def show_popup(self, event):
+        """Выводит контекстное меню"""
+        self.menu.post(event.x_root, event.y_root)
 
+    def cut_text(self):
+        """Копирует и удаляет выделенный текст"""
+        self.copy_text()
+        self.delete_text()
+
+    def copy_text(self):
+        """Копирует выделенный текст"""
+        print('Сработал метод copy_text')
+        selection = self.notepad.tag_ranges(SEL)
+        if selection:
+            self.root.clipboard_clear()
+            text_zone = self.notepad.get(*selection)
+            self.root.clipboard_append(text_zone)
+
+    def paste_text(self):
+        """Вставляет текст из буфера обмена"""
+        print('Сработал метод paste_text')
+        self.notepad.insert(INSERT, self.root.clipboard_get())
+
+    def delete_text(self):
+        """Удаляет выделенный текст"""
+        selection = self.notepad.tag_ranges(SEL)
+        if selection:
+            self.notepad.delete(*selection)

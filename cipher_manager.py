@@ -27,7 +27,6 @@ class CipherManager:
         filename: Имя файла для загрузки;
         mod_load: Режим записи в файл(дозапись или перезапись) по умолчанию перезапись
         """
-
         with open(filename, mod_load, encoding="utf-8") as file:
             for row in data:
                 file.write(row + '\n')
@@ -40,7 +39,6 @@ class CipherManager:
         Создаёт генератор который возвращает строки из зашифрованного файла.
         filename - это имя файла который будет читать функция.
         """
-
         with open(filename, 'r', encoding="utf-8") as file:
             for row in file:
                 yield row.rstrip()
@@ -58,7 +56,6 @@ class CipherManager:
         Создаёт генератор который расшифровывает и возвращает строки.
         data - это итерируемый объект элементы которого надо расшифровать
         """
-
         for row in data:
             if len(row) > 3:
                 row = row[2:len(row)-1]

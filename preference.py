@@ -4,6 +4,10 @@ from tkinter import ttk, font
 import json
 
 
+# все доступные размеры шрифтов
+SIZES = tuple(range(8, 25))
+
+
 class Config:
     """Для удобства работы со словарём конфига"""
     __slots__ = ('font_size', 'font', 'index_font_size', 'index_font')
@@ -40,7 +44,6 @@ class Config:
             }, fp=json_file, indent=2)
             return self
 
-
 class Preference:
     def __init__(self, config: Config):
         self.root = Toplevel()
@@ -48,17 +51,15 @@ class Preference:
         self.root.geometry('400x150')
         self.root.resizable(False, False)
 
-        # все шрифты
-        self.__FONTS = font.families()
-        # все размеры шрифтов
-        self.__SIZES = tuple(range(8, 25))
-
         self.config = config
 
+        # все доступные шрифты
+        self.FONTS = font.families()
+
         # размер шрифта
-        self.font_size = ttk.Combobox(self.root, values=self.__SIZES)
+        self.font_size = ttk.Combobox(self.root, values=SIZES)
         # шрифт
-        self.font = ttk.Combobox(self.root, values=self.__FONTS)
+        self.font = ttk.Combobox(self.root, values=self.FONTS)
 
         # уст-ка стартовых значений
         self.font_size.current(self.config.index_font_size)
@@ -91,13 +92,13 @@ class Preference:
         """Сохраняет выбранные конфигурации в config.json"""
         font_size = self.font_size.get()
         font = self.font.get()
-        font_size = int(font_size) if font_size else self.config['font_size']
-        font = font if font else self.config['font']
+        font_size = int(font_size) if font_size else self.config.font_size
+        font = font if font else self.config.font
         self.config = {
             'font_size': font_size,
             'font': font,
-            'index_font_size': self.__SIZES.index(font_size),
-            'index_font': self.__FONTS.index(font),
+            'index_font_size': SIZES.index(font_size),
+            'index_font': self.FONTS.index(font),
         }
         self.create_cfg_file()
         self.close_cfg()
@@ -120,5 +121,6 @@ class Preference:
 
 
 if __name__ == '__main__':
-    pref = Preference()
+    config = Config()
+    pref = Preference(config=config)
     pref.run()
