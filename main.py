@@ -2,11 +2,10 @@ from cipher_manager import CipherManager
 from preference import Preference, Config, SIZES
 
 from tkinter import *
-from tkinter import ttk, filedialog, messagebox
+from tkinter import filedialog, messagebox
 
 from cryptography.fernet import InvalidToken
 from functools import partial
-from copy import deepcopy
 import os
 
 
@@ -43,7 +42,7 @@ class MainWindow:
         self.root.protocol('WM_DELETE_WINDOW', self.exit)
 
         # конфиг приложения
-        self.current_config = config
+        self.config = config
 
         # меню окна
         self.menu = Menu(self.root)
@@ -67,7 +66,7 @@ class MainWindow:
         self.root.config(menu=self.menu)
 
         # создаём текстовое поле
-        self.notepad = Text(self.root, font=(self.current_config.font, self.current_config.font_size), wrap=WORD)
+        self.notepad = Text(self.root, font=(self.config.font, self.config.font_size), wrap=WORD)
         self.notepad.pack(fill='both', expand=True)
 
         # Создание колеса прокрутки по вертикали
@@ -114,15 +113,15 @@ class MainWindow:
         """
         # изменение размера шрифта
         if event.keycode == 38:
-            if self.current_config.font_size + 2 <= 24:
-                self.current_config.font_size += 2
-                self.current_config.index_font_size = SIZES.index(self.current_config.font_size)
-                self.notepad.config(font=(self.current_config.font, self.current_config.font_size))
+            if self.config.font_size + 2 <= 24:
+                self.config.font_size += 2
+                self.config.index_font_size = SIZES.index(self.config.font_size)
+                self.notepad.config(font=(self.config.font, self.config.font_size))
         elif event.keycode == 40:
-            if self.current_config.font_size - 2 >= 8:
-                self.current_config.font_size -= 2
-                self.current_config.index_font_size = SIZES.index(self.current_config.font_size)
-                self.notepad.config(font=(self.current_config.font, self.current_config.font_size))
+            if self.config.font_size - 2 >= 8:
+                self.config.font_size -= 2
+                self.config.index_font_size = SIZES.index(self.config.font_size)
+                self.notepad.config(font=(self.config.font, self.config.font_size))
         elif event.keycode == 86 and event.keysym != 'v':
             self.paste_text()
         elif event.keycode == 67 and event.keysym != 'c':
@@ -255,14 +254,15 @@ class MainWindow:
         Метод оконного меню, отвечает за внешний вид окна и шрифта.
         """
         # открываем дочернее окно
-        pref = Preference(config=self.current_config)
+        pref = Preference(config=self.config)
+        # фокус на дочернее окно
         pref.focus()
 
         # просто получаем обновлённый конфиг из объекта класса Preference
-        self.current_config = pref.config
+        self.config = pref.config
 
         # пересоздаём и устанавливаем блокнот с новой конфигурацией
-        self.notepad.config(font=(self.current_config.font, self.current_config.font_size))
+        self.notepad.config(font=(self.config.font, self.config.font_size))
 
     def about(self, flag: str):
         """

@@ -57,6 +57,7 @@ class Preference:
         self.root.geometry('400x150')
         self.root.resizable(False, False)
 
+        # начальный конфиг
         self.config = config
 
         # все доступные шрифты
