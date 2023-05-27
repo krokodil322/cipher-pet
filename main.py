@@ -6,6 +6,7 @@ from tkinter import ttk, filedialog, messagebox
 
 from cryptography.fernet import InvalidToken
 from functools import partial
+from copy import deepcopy
 import os
 
 
@@ -42,7 +43,7 @@ class MainWindow:
         self.root.protocol('WM_DELETE_WINDOW', self.exit)
 
         # конфиг приложения
-        self.config = config
+        self.current_config = config
 
         # меню окна
         self.menu = Menu(self.root)
@@ -66,7 +67,7 @@ class MainWindow:
         self.root.config(menu=self.menu)
 
         # создаём текстовое поле
-        self.notepad = Text(self.root, font=(self.config.font, self.config.font_size), wrap=WORD)
+        self.notepad = Text(self.root, font=(self.current_config.font, self.current_config.font_size), wrap=WORD)
         self.notepad.pack(fill='both', expand=True)
 
         # Создание колеса прокрутки по вертикали
@@ -88,34 +89,44 @@ class MainWindow:
         self.cipher = CipherManager()
 
         # событие для кобминаций клавиш
-        self.root.bind('<Control-KeyPress>', self.__hot_key_change_font_size)
+        self.root.bind('<Control-KeyPress>', self.__hot_keys)
         self.menu = Menu(self.root, tearoff=0)
         self.menu.add_command(label="Вырезать", command=self.cut_text)
         self.menu.add_command(label="Копировать", command=self.copy_text)
         self.menu.add_command(label="Вставить", command=self.paste_text)
         self.menu.add_command(label="Удалить", command=self.delete_text)
         self.notepad.bind("<Button-3>", self.show_popup)
-        self.notepad.bind('Control-c', self.copy_text)
-        self.notepad.bind('Control-v', self.paste_text)
 
-    def __hot_key_change_font_size(self, event) -> None:
+        self.notepad.event_add('<<Paste>>', '<Control-igrave>')
+        self.notepad.event_add("<<Copy>>", "<Control-ntilde>")
+
+    def __hot_keys(self, event) -> None:
         """
         Принимает event - который передаётся автоматически при нажатии любой клавиши.
-        Ивент который срабатывает при нажатии клавиш
-        Если клавиши CTRL + UP, то увеличивает шрифт на 2
-        Если клавиши CTRL + DOWN, то уменьшает шрифт на 2
+        Ивенты которые срабатывает при нажатии клавиш
+            Если клавиши CTRL + UP, то увеличивает шрифт на 2
+            Если клавиши CTRL + DOWN, то уменьшает шрифт на 2
+
+            Если клавиши CTRL + C, то срабатывает копирование выделенной области
+            Если клавиши CTRL + V, то вставляет текст из буфера обмена в указанное место
+
         Ничего не возвращает
         """
+        # изменение размера шрифта
         if event.keycode == 38:
-            if self.config.font_size + 2 <= 26:
-                self.config.font_size += 2
-                self.config.index_font_size = SIZES.index(self.config.font_size)
-                self.notepad.config(font=(self.config.font, self.config.font_size))
+            if self.current_config.font_size + 2 <= 24:
+                self.current_config.font_size += 2
+                self.current_config.index_font_size = SIZES.index(self.current_config.font_size)
+                self.notepad.config(font=(self.current_config.font, self.current_config.font_size))
         elif event.keycode == 40:
-            if self.config.font_size - 2 >= 8:
-                self.config.font_size -= 2
-                self.config.index_font_size = SIZES.index(self.config.font_size)
-                self.notepad.config(font=(self.config.font, self.config.font_size))
+            if self.current_config.font_size - 2 >= 8:
+                self.current_config.font_size -= 2
+                self.current_config.index_font_size = SIZES.index(self.current_config.font_size)
+                self.notepad.config(font=(self.current_config.font, self.current_config.font_size))
+        elif event.keycode == 86 and event.keysym != 'v':
+            self.paste_text()
+        elif event.keycode == 67 and event.keysym != 'c':
+            self.copy_text()
 
     def exit(self):
         """
@@ -244,14 +255,14 @@ class MainWindow:
         Метод оконного меню, отвечает за внешний вид окна и шрифта.
         """
         # открываем дочернее окно
-        pref = Preference(config=self.config)
+        pref = Preference(config=self.current_config)
         pref.focus()
 
-        # получаем обновлённый конфиг
-        self.config = self.config.get_config()
+        # просто получаем обновлённый конфиг из объекта класса Preference
+        self.current_config = pref.config
 
         # пересоздаём и устанавливаем блокнот с новой конфигурацией
-        self.notepad.config(font=(self.config.font, self.config.font_size))
+        self.notepad.config(font=(self.current_config.font, self.current_config.font_size))
 
     def about(self, flag: str):
         """

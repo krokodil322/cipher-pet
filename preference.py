@@ -24,6 +24,12 @@ class Config:
         self.index_font_size = int(index_font_size)
         self.index_font = int(index_font)
 
+    def __repr__(self):
+        return f'font_size: {self.font_size}\n' \
+                f'font: {self.font}\n' \
+                f'index_font_size: {self.index_font_size}\n' \
+                f'index_font: {self.index_font}'
+
     def get_config(self) -> 'Config':
         """
         Создаёт дефолтный конфиг, если файла config.json не создан;
@@ -78,30 +84,35 @@ class Preference:
         self.font.place(x=240, y=60)
 
         # создание и уст-ка кнопок сохранения и выхода окна конфига
-        self.btn_save_cfg = ttk.Button(self.root, text='Сохранить', command=self.save_cfg)
-        self.btn_close_cfg = ttk.Button(self.root, text='Закрыть', command=self.close_cfg)
-        self.btn_save_cfg.place(x=300, y=120)
-        self.btn_close_cfg.place(x=200, y=120)
+        self.btn_save_config = ttk.Button(self.root, text='Сохранить', command=self.save_config)
+        self.btn_close_config = ttk.Button(self.root, text='Закрыть', command=self.close_config)
+        self.btn_save_config.place(x=300, y=120)
+        self.btn_close_config.place(x=200, y=120)
 
-    def create_cfg_file(self):
-        """Создаёт файл config.json в котором выставлены настройки шрифта"""
+    def save_config_into_file(self):
+        """
+        Создаёт файл config.json в котором выставлены настройки шрифта
+        Либо сохраняет новые данные в этот файл.
+        """
         with open('config.json', 'w', encoding='utf-8') as json_file:
             json.dump(self.config, fp=json_file, indent=2)
 
-    def save_cfg(self):
-        """Сохраняет выбранные конфигурации в config.json"""
+    def save_config(self):
+        """
+        Забирает данные из формы(окна Preference) которые выбрал пользователь.
+        Возвращает объект класса Config
+        """
         font_size = self.font_size.get()
         font = self.font.get()
         font_size = int(font_size) if font_size else self.config.font_size
         font = font if font else self.config.font
-        self.config = {
-            'font_size': font_size,
-            'font': font,
-            'index_font_size': SIZES.index(font_size),
-            'index_font': self.FONTS.index(font),
-        }
-        self.create_cfg_file()
-        self.close_cfg()
+        self.config = Config(
+            font_size = font_size,
+            font = font,
+            index_font_size = SIZES.index(font_size),
+            index_font = self.FONTS.index(font),
+        )
+        self.close_config()
 
     def focus(self):
         """
@@ -113,10 +124,12 @@ class Preference:
         self.root.focus_set()
         self.root.wait_window()
 
-    def close_cfg(self):
+    def close_config(self):
+        """Закрывает дочернее окно класса Preference"""
         self.root.destroy()
 
     def run(self):
+        """Запускает дочернее окно класса Preference"""
         self.root.mainloop()
 
 
